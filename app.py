@@ -11,30 +11,44 @@ st.title("🛍️ Customer Segmentation & Recommendation System")
 uploaded_file = st.file_uploader("Upload your dataset (CSV)", type=["csv"])
 
 if uploaded_file:
-    df = pd.read_csv(uploaded_file, encoding='latin-1')
+    # 🔹 Handle encoding safely
+    try:
+        df = pd.read_csv(uploaded_file, encoding='utf-8')
+    except:
+        df = pd.read_csv(uploaded_file, encoding='latin-1')
+
     st.subheader("📊 Dataset Preview")
     st.dataframe(df.head())
 
-    # Save file to correct location
+    # 🔹 Save dataset for pipeline
     os.makedirs("data", exist_ok=True)
     df.to_csv("data/data.csv", index=False)
 
     if st.button("🚀 Run Model"):
         st.info("Running pipeline... please wait ⏳")
 
-        # Run your main script
+        # Ensure outputs folder exists
+        os.makedirs("outputs", exist_ok=True)
+
+        # Run main pipeline
         subprocess.run(["python", "main.py", "--skip_plots"])
 
         st.success("✅ Model executed successfully!")
 
-        # Show outputs
-        st.subheader("📌 Customer Segments")
-        seg = pd.read_csv("outputs/customer_segments.csv")
-        st.dataframe(seg.head())
+        # 🔹 Show outputs only if they exist
+        if os.path.exists("outputs/customer_segments.csv"):
+            seg = pd.read_csv("outputs/customer_segments.csv")
+            st.subheader("📌 Customer Segments")
+            st.dataframe(seg.head())
 
-        st.subheader("⭐ Recommendations")
-        rec = pd.read_csv("outputs/recommendations.csv")
-        st.dataframe(rec.head())
+            st.subheader("📊 Cluster Distribution")
+            st.bar_chart(seg["cluster"].value_counts())
+        else:
+            st.warning("Customer segments file not found.")
 
-        st.subheader("📊 Cluster Distribution")
-        st.bar_chart(seg["cluster"].value_counts())
+        if os.path.exists("outputs/recommendations.csv"):
+            rec = pd.read_csv("outputs/recommendations.csv")
+            st.subheader("⭐ Recommendations")
+            st.dataframe(rec.head())
+        else:
+            st.warning("Recommendations file not found.")
