@@ -1,7 +1,9 @@
 import streamlit as st
 import pandas as pd
-import subprocess
 import os
+import sys
+
+from main import main  # ✅ direct import instead of subprocess
 
 st.set_page_config(page_title="Customer Segmentation", layout="wide")
 
@@ -20,7 +22,7 @@ if uploaded_file:
     st.subheader("📊 Dataset Preview")
     st.dataframe(df.head())
 
-    # 🔹 Save dataset for pipeline
+    # 🔹 Save dataset
     os.makedirs("data", exist_ok=True)
     df.to_csv("data/data.csv", index=False)
 
@@ -30,12 +32,15 @@ if uploaded_file:
         # Ensure outputs folder exists
         os.makedirs("outputs", exist_ok=True)
 
-        # Run main pipeline
-        subprocess.run(["python", "main.py", "--skip_plots"])
+        # 🔥 Run pipeline directly
+        try:
+            sys.argv = ["main.py", "--skip_plots"]  # simulate CLI args
+            main()
+            st.success("✅ Model executed successfully!")
+        except Exception as e:
+            st.error(f"Error running model: {e}")
 
-        st.success("✅ Model executed successfully!")
-
-        # 🔹 Show outputs only if they exist
+        # 🔹 Show outputs
         if os.path.exists("outputs/customer_segments.csv"):
             seg = pd.read_csv("outputs/customer_segments.csv")
             st.subheader("📌 Customer Segments")
