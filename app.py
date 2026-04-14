@@ -41,20 +41,20 @@ if uploaded_file:
             st.error(f"Error running model: {e}")
         st.subheader("📈 Visualizations")
 
-if os.path.exists("plots/elbow.png"):
-    st.image("plots/elbow.png", caption="Elbow Method")
+        if os.path.exists("plots/elbow.png"):
+            st.image("plots/elbow.png", caption="Elbow Method")
 
-if os.path.exists("plots/silhouette.png"):
-    st.image("plots/silhouette.png", caption="Silhouette Scores")
+        if os.path.exists("plots/silhouette.png"):
+            st.image("plots/silhouette.png", caption="Silhouette Scores")
 
-if os.path.exists("plots/radar.png"):
-    st.image("plots/radar.png", caption="Customer Segments Radar Chart")
+        if os.path.exists("plots/radar.png"):
+            st.image("plots/radar.png", caption="Customer Segments Radar Chart")
 
-if os.path.exists("plots/histograms.png"):
-    st.image("plots/histograms.png", caption="Feature Distributions")
+        if os.path.exists("plots/histograms.png"):
+            st.image("plots/histograms.png", caption="Feature Distributions")
 
-if os.path.exists("plots/outliers.png"):
-    st.image("plots/outliers.png", caption="Outlier Detection")
+        if os.path.exists("plots/outliers.png"):
+            st.image("plots/outliers.png", caption="Outlier Detection")
 
         # 🔹 Show outputs
         if os.path.exists("outputs/customer_segments.csv"):
