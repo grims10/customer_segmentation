@@ -13,6 +13,12 @@ def evaluate_clusters(customer_data_pca: pd.DataFrame):
     cal = calinski_harabasz_score(X, clusters)
     dav = davies_bouldin_score(X, clusters)
 
+    metrics = {
+        "observations": int(len(X)),
+        "silhouette_score": float(sil),
+        "calinski_harabasz_score": float(cal),
+        "davies_bouldin_score": float(dav),
+    }
     table = [
         ["Observations",           len(X)],
         ["Silhouette Score",        f"{sil:.4f}"],
@@ -20,3 +26,4 @@ def evaluate_clusters(customer_data_pca: pd.DataFrame):
         ["Davies-Bouldin Score",    f"{dav:.4f}"],
     ]
     print("\n" + tabulate(table, headers=["Metric", "Value"], tablefmt="pretty"))
+    return metrics

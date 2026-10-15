@@ -34,7 +34,8 @@ def plot_radar(customer_data_cleaned: pd.DataFrame, plots_dir: str = "plots"):
     if len(centroids) == 1:
         axes = [axes]
 
-    for i, (ax, color) in enumerate(zip(axes, CLUSTER_COLORS[:len(centroids)])):
+    colors = plt.cm.tab20(np.linspace(0, 1, len(centroids)))
+    for i, (ax, color) in enumerate(zip(axes, colors)):
         data = centroids.loc[i].tolist() + [centroids.loc[i].tolist()[0]]
         ax.fill(angles, data, color=color, alpha=0.4)
         ax.plot(angles, data, color=color, linewidth=2)
@@ -56,7 +57,7 @@ def plot_histograms(customer_data_cleaned: pd.DataFrame, plots_dir: str = "plots
     features = [c for c in customer_data_cleaned.columns
                 if c not in ("CustomerID", "cluster")]
     cluster_ids = sorted(customer_data_cleaned["cluster"].unique())
-    colors = CLUSTER_COLORS[:len(cluster_ids)]
+    colors = plt.cm.tab20(np.linspace(0, 1, len(cluster_ids)))
 
     n_rows = len(features)
     n_cols = len(cluster_ids)

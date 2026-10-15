@@ -12,7 +12,7 @@ from collections import Counter
 def find_optimal_k(
     customer_data_pca: pd.DataFrame,
     k_range: tuple = (2, 15),
-    sil_range: tuple = (3, 12),
+    sil_range: tuple = (2, 12),
     plots_dir: str = "plots",
 ):
     """Run Elbow + Silhouette analysis and save plots (manual version)."""
@@ -22,7 +22,10 @@ def find_optimal_k(
     df = customer_data_pca.drop(columns=["cluster"], errors="ignore")
 
     # 🔹 Elbow Method
-    k_values = range(k_range[0], k_range[1])
+    max_k = min(k_range[1], len(df))
+    k_values = range(k_range[0], max_k)
+    if not k_values:
+        return
     inertia = []
 
     for k in k_values:
@@ -40,7 +43,7 @@ def find_optimal_k(
     plt.close()
 
     # 🔹 Silhouette Scores
-    sil_values = range(sil_range[0], sil_range[1])
+    sil_values = range(sil_range[0], min(sil_range[1], len(df)))
     scores = []
 
     for k in sil_values:
