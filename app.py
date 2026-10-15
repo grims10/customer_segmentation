@@ -1,75 +1,78 @@
-import streamlit as st
-import pandas as pd
-import os
-import sys
+from pathlib import Path
+import tempfile
 
-from main import main  
+import pandas as pd
+import streamlit as st
+
+from main import main
+from src.data_loader import REQUIRED_COLUMNS
 
 st.set_page_config(page_title="Customer Segmentation", layout="wide")
+st.title("Customer Segmentation & Recommendation System")
+st.caption("Upload retail transaction data to explore customer groups. This unsupervised demo does not establish that recommendations improve business outcomes.")
 
-st.title(" Customer Segmentation & Recommendation System")
-
-
-uploaded_file = st.file_uploader("Upload your dataset (CSV)", type=["csv"])
+uploaded_file = st.file_uploader("Upload a retail transaction CSV", type=["csv"])
 
 if uploaded_file:
-    
     try:
-        df = pd.read_csv(uploaded_file, encoding='utf-8')
-    except:
-        df = pd.read_csv(uploaded_file, encoding='latin-1')
-
-    st.subheader("Dataset Preview")
-    st.dataframe(df.head())
-
-    
-    os.makedirs("data", exist_ok=True)
-    df.to_csv("data/data.csv", index=False)
-
-    if st.button(" Run Model"):
-        st.info("Running pipeline... please wait ")
-
-        
-        os.makedirs("outputs", exist_ok=True)
-
-       
+        df = pd.read_csv(uploaded_file, encoding="utf-8")
+    except UnicodeDecodeError:
+        uploaded_file.seek(0)
         try:
-            sys.argv = ["main.py"]  
-            main()
-            st.success(" Model executed successfully!")
-        except Exception as e:
-            st.error(f"Error running model: {e}")
-        st.subheader(" Visualizations")
+            df = pd.read_csv(uploaded_file, encoding="ISO-8859-1")
+        except Exception:
+            st.error("Could not read this CSV. Check its encoding and file format.")
+            st.stop()
+    except Exception:
+        st.error("Could not read this CSV. Check its file format.")
+        st.stop()
 
-        if os.path.exists("plots/elbow.png"):
-            st.image("plots/elbow.png", caption="Elbow Method")
+    missing = sorted(REQUIRED_COLUMNS - set(df.columns))
+    if missing:
+        st.error("Required columns are missing: " + ", ".join(missing))
+        st.stop()
+    if df.empty:
+        st.error("The uploaded CSV contains no rows.")
+        st.stop()
 
-        if os.path.exists("plots/silhouette.png"):
-            st.image("plots/silhouette.png", caption="Silhouette Scores")
+    st.subheader("Dataset preview")
+    st.dataframe(df.head(), use_container_width=True)
+    st.caption(f"{len(df):,} rows · {len(df.columns)} columns")
 
-        if os.path.exists("plots/radar.png"):
-            st.image("plots/radar.png", caption="Customer Segments Radar Chart")
+    clusters = st.number_input("Number of customer clusters", min_value=2, max_value=12, value=3)
+    if st.button("Run segmentation", type="primary"):
+        with tempfile.TemporaryDirectory(prefix="customer-segmentation-") as temp_dir:
+            root = Path(temp_dir)
+            input_path = root / "input.csv"
+            df.to_csv(input_path, index=False)
+            try:
+                result = main(["--data", str(input_path), "--n_clusters", str(int(clusters)),
+                               "--output_dir", str(root)])
+                st.success("Analysis completed.")
+                metrics = result["metrics"]
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Customers clustered", metrics["observations"])
+                c2.metric("Silhouette score", f'{metrics["silhouette_score"]:.3f}')
+                c3.metric("Davies–Bouldin score", f'{metrics["davies_bouldin_score"]:.3f}')
 
-        if os.path.exists("plots/histograms.png"):
-            st.image("plots/histograms.png", caption="Feature Distributions")
+                plots_dir = result["plots_dir"]
+                for filename, caption in [
+                    ("elbow.png", "Elbow analysis"),
+                    ("silhouette.png", "Silhouette scores across cluster counts"),
+                    ("pca_variance.png", "PCA explained variance"),
+                    ("radar_charts.png", "Cluster feature profiles"),
+                    ("histograms.png", "Feature distributions by cluster"),
+                    ("outliers.png", "Outlier detection summary"),
+                ]:
+                    image_path = plots_dir / filename
+                    if image_path.exists():
+                        st.image(str(image_path), caption=caption, use_container_width=True)
 
-        if os.path.exists("plots/outliers.png"):
-            st.image("plots/outliers.png", caption="Outlier Detection")
-
-        
-        if os.path.exists("outputs/customer_segments.csv"):
-            seg = pd.read_csv("outputs/customer_segments.csv")
-            st.subheader(" Customer Segments")
-            st.dataframe(seg.head())
-
-            st.subheader(" Cluster Distribution")
-            st.bar_chart(seg["cluster"].value_counts())
-        else:
-            st.warning("Customer segments file not found.")
-
-        if os.path.exists("outputs/recommendations.csv"):
-            rec = pd.read_csv("outputs/recommendations.csv")
-            st.subheader(" Recommendations")
-            st.dataframe(rec.head())
-        else:
-            st.warning("Recommendations file not found.")
+                st.subheader("Customer segments")
+                st.dataframe(result["segments"], use_container_width=True)
+                st.subheader("Product recommendations")
+                st.dataframe(result["recommendations"], use_container_width=True)
+            except (ValueError, FileNotFoundError) as exc:
+                st.error(str(exc))
+            except Exception:
+                st.error("The analysis failed. Verify the input values and try again.")

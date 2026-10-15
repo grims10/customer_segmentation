@@ -98,7 +98,7 @@ def build_customer_features(df: pd.DataFrame) -> pd.DataFrame:
     cancel_freq.rename(columns={"InvoiceNo": "Cancellation_Frequency"}, inplace=True)
 
     customer_data = customer_data.merge(cancel_freq, on="CustomerID", how="left")
-    customer_data["Cancellation_Frequency"].fillna(0, inplace=True)
+    customer_data["Cancellation_Frequency"] = customer_data["Cancellation_Frequency"].fillna(0)
     customer_data["Cancellation_Rate"] = (
         customer_data["Cancellation_Frequency"] / customer_data["Total_Transactions"]
     )
@@ -112,7 +112,7 @@ def build_customer_features(df: pd.DataFrame) -> pd.DataFrame:
     seasonal.rename(
         columns={"mean": "Monthly_Spending_Mean", "std": "Monthly_Spending_Std"}, inplace=True
     )
-    seasonal["Monthly_Spending_Std"].fillna(0, inplace=True)
+    seasonal["Monthly_Spending_Std"] = seasonal["Monthly_Spending_Std"].fillna(0)
 
     def calc_trend(series):
         if len(series) > 1:
